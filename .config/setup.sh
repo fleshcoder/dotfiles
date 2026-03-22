@@ -174,6 +174,7 @@ apps=(
 	obs
 	hiddenbar
 	android-studio
+	input-source-pro
 )
 brew install --cask "${apps[@]}"
 
@@ -375,9 +376,10 @@ export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
 
-# Source secrets (API tokens, credentials - NOT tracked in git)
-[ -f "$HOME/.secrets" ] && source "$HOME/.secrets"
 ZSHRC_EOF
+
+# setup dotfiles don't show unstacked files 
+dotfiles config --local status.showUntrackedFiles no
 
 
 # -------------------------------------------
@@ -390,8 +392,24 @@ mise use --global go@latest
 mise use --global java@temurin-21
 mise use --global python@3
 
+
 # -------------------------------------------
-# 16. macOS System Preferences
+# 16 SSH config (1Password SSH Agent)
+# -------------------------------------------
+echo "Configuring SSH for 1Password Agent..."
+mkdir -p "$HOME/.ssh"
+chmod 700 "$HOME/.ssh"
+ 
+if [ ! -f "$HOME/.ssh/config" ]; then
+  cat > "$HOME/.ssh/config" << 'SSHCONFIG_EOF'
+Host *
+  IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+SSHCONFIG_EOF
+  chmod 600 "$HOME/.ssh/config"
+fi
+
+# -------------------------------------------
+# 17. macOS System Preferences
 # -------------------------------------------
 echo "Configuring macOS preferences..."
 
@@ -450,7 +468,7 @@ echo ""
 echo "NEXT STEPS:"
 echo "  1. 重新登入讓鍵盤/觸控板設定生效"
 echo "  2. Run: p10k configure"
-echo "  3. Edit ~/.secrets and add your API tokens"
+echo "  3. 安裝 嘸蝦咪輸入法"
 echo "  4. Restore Neovim config to ~/.config/nvim/"
 echo "  5. Login: 1Password, Chrome, Slack, gh auth login"
 echo "  6. Configure AWS: aws configure"
