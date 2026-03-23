@@ -5,6 +5,8 @@ echo "========================================="
 echo "  Mac Setup Script - Dida's Dev Environment"
 echo "========================================="
 
+DOTFILES_DIR="$HOME/.dotfiles"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # -------------------------------------------
 # 1. Homebrew
 # -------------------------------------------
@@ -34,7 +36,44 @@ git config --global core.editor "nvim"
 git config --global rerere.enabled true
 
 # -------------------------------------------
-# 3. Zsh & Terminal
+# 3. Dotfiles (convert to bare repo)
+# -------------------------------------------
+echo "Setting up dotfiles bare repo..."
+ 
+dotfiles() {
+  git --git-dir="$DOTFILES_DIR" --work-tree="$HOME" "$@"
+}
+ 
+if [ ! -d "$DOTFILES_DIR" ]; then
+  # 從目前 clone 下來的 repo 轉換成 bare repo
+  git clone --bare "$SCRIPT_DIR" "$DOTFILES_DIR"
+ 
+  # 設定 remote 指向 GitHub（取代本地路徑）
+  dotfiles remote set-url origin git@github.com:fleshcoder/dotfiles.git
+ 
+  dotfiles config --local status.showUntrackedFiles no
+ 
+  # checkout dotfiles 到 $HOME，衝突檔案先備份
+  if ! dotfiles checkout 2>/dev/null; then
+    echo "Backing up conflicting dotfiles..."
+    mkdir -p "$HOME/.dotfiles-backup"
+    dotfiles checkout 2>&1 \
+      | grep -E "^\s+" \
+      | awk '{print $1}' \
+      | while read -r file; do
+          mkdir -p "$HOME/.dotfiles-backup/$(dirname "$file")"
+          mv "$HOME/$file" "$HOME/.dotfiles-backup/$file"
+        done
+    dotfiles checkout
+  fi
+ 
+  echo "Dotfiles restored to \$HOME."
+else
+  echo "Dotfiles bare repo already exists, skipping."
+fi
+
+# -------------------------------------------
+# 4. Zsh & Terminal
 # -------------------------------------------
 echo "Installing terminal tools..."
 brew install zsh
@@ -85,13 +124,13 @@ brew install "${cli_tools[@]}"
 "$(brew --prefix)/opt/fzf/install" --key-bindings --completion --no-update-rc --no-bash --no-fish
 
 # -------------------------------------------
-# 5. Runtime Version Manager (mise)
+# 6. Runtime Version Manager (mise)
 # -------------------------------------------
 echo "Installing mise for runtime management..."
 brew install mise
 
 # -------------------------------------------
-# 6. Neovim Ecosystem
+# 7. Neovim Ecosystem
 # -------------------------------------------
 echo "Installing Neovim dependencies..."
 neovim_deps=(
@@ -102,7 +141,7 @@ neovim_deps=(
 brew install "${neovim_deps[@]}"
 
 # -------------------------------------------
-# 7. Languages & SDKs (brew-managed, not runtime)
+# 8. Languages & SDKs (brew-managed, not runtime)
 # -------------------------------------------
 echo "Installing language tooling..."
 brew install protobuf
@@ -114,7 +153,7 @@ if ! command -v rustup &>/dev/null; then
 fi
 
 # -------------------------------------------
-# 8. Infrastructure & DevOps
+# 9. Infrastructure & DevOps
 # -------------------------------------------
 echo "Installing infra tools..."
 brew install kubectl
@@ -122,7 +161,7 @@ brew install terraform
 brew install awscli
 
 # -------------------------------------------
-# 9. Fonts
+# 10. Fonts
 # -------------------------------------------
 echo "Installing fonts..."
 
@@ -146,7 +185,7 @@ cjk_fonts=(
 brew install --cask "${cjk_fonts[@]}"
 
 # -------------------------------------------
-# 10. GUI Applications
+# 11. GUI Applications
 # -------------------------------------------
 echo "Installing applications..."
 apps=(
@@ -179,14 +218,14 @@ apps=(
 brew install --cask "${apps[@]}"
 
 # -------------------------------------------
-# 11. Mac App Store Apps
+# 12. Mac App Store Apps
 # -------------------------------------------
 echo "Installing Mac App Store apps..."
 brew install mas
 mas install 539883307  # LINE
 
 # -------------------------------------------
-# 12. Dotfiles - .zshenv
+# 13. Dotfiles - .zshenv
 # -------------------------------------------
 echo "Writing ~/.zshenv..."
 cat > "$HOME/.zshenv" << 'ZSHENV_EOF'
@@ -216,7 +255,7 @@ export ANDROID_HOME="$HOME/Library/Android/sdk"
 ZSHENV_EOF
 
 # -------------------------------------------
-# 13. Dotfiles - .zprofile
+# 14. Dotfiles - .zprofile
 # -------------------------------------------
 echo "Writing ~/.zprofile..."
 cat > "$HOME/.zprofile" << 'ZPROFILE_EOF'
@@ -258,7 +297,7 @@ fi
 ZPROFILE_EOF
 
 # -------------------------------------------
-# 14. Dotfiles - .zshrc
+# 15. Dotfiles - .zshrc
 # -------------------------------------------
 echo "Writing ~/.zshrc..."
 cat > "$HOME/.zshrc" << 'ZSHRC_EOF'
@@ -383,7 +422,7 @@ dotfiles config --local status.showUntrackedFiles no
 
 
 # -------------------------------------------
-# 15. Runtime Versions (via mise)
+# 16. Runtime Versions (via mise)
 # -------------------------------------------
 echo "Installing runtime versions via mise..."
 eval "$(mise activate bash)"
@@ -394,7 +433,7 @@ mise use --global python@3
 
 
 # -------------------------------------------
-# 16 SSH config (1Password SSH Agent)
+# 17 SSH config (1Password SSH Agent)
 # -------------------------------------------
 echo "Configuring SSH for 1Password Agent..."
 mkdir -p "$HOME/.ssh"
@@ -409,7 +448,7 @@ SSHCONFIG_EOF
 fi
 
 # -------------------------------------------
-# 17. macOS System Preferences
+# 18. macOS System Preferences
 # -------------------------------------------
 echo "Configuring macOS preferences..."
 
@@ -456,7 +495,7 @@ defaults write com.apple.dock show-recents -bool false
 killall Dock
 
 # -------------------------------------------
-# 18. Cleanup
+# 19. Cleanup
 # -------------------------------------------
 echo "Cleaning up..."
 brew cleanup
