@@ -102,7 +102,7 @@ if [ ! -d "$ZSH_CUSTOM_DIR/plugins/zsh-syntax-highlighting" ]; then
 fi
 
 # -------------------------------------------
-# 4. Modern CLI Tools
+# 5. Modern CLI Tools
 # -------------------------------------------
 echo "Installing modern CLI tools..."
 cli_tools=(
@@ -121,11 +121,14 @@ cli_tools=(
 brew install "${cli_tools[@]}"
 
 # fzf key bindings & completion
-"$(brew --prefix)/opt/fzf/install" --key-bindings --completion --no-update-rc --no-bash --no-fish
+if [ ! -f "$HOME/.fzf.zsh" ]; then
+  "$(brew --prefix)/opt/fzf/install" --key-bindings --completion --no-update-rc --no-bash --no-fish
+fi
 
 # -------------------------------------------
 # 6. Runtime Version Manager (mise)
 # -------------------------------------------
+
 echo "Installing mise for runtime management..."
 brew install mise
 
@@ -174,7 +177,9 @@ eng_fonts=(
   font-monaspace                   # GitHub 出品，texture healing
   font-monaspice-nerd-font         # Monaspace 的 Nerd Font 版本
 )
-brew install --cask "${eng_fonts[@]}"
+for font in "${eng_fonts[@]}"; do
+  brew install --cask "$font" || echo "Warning: Failed to install $font, skipping..."
+done
 
 # Chinese fonts (terminal CJK fallback & reading)
 cjk_fonts=(
@@ -182,7 +187,9 @@ cjk_fonts=(
   font-lxgw-wenkai-mono-tc         # 霞鶩文楷等寬 TC（終端用）
   font-sarasa-gothic               # 更紗黑體（中英等寬混排最佳）
 )
-brew install --cask "${cjk_fonts[@]}"
+for font in "${cjk_fonts[@]}"; do
+  brew install --cask "$font" || echo "Warning: Failed to install $font, skipping..."
+done
 
 # -------------------------------------------
 # 11. GUI Applications
@@ -212,10 +219,11 @@ apps=(
 	iina
 	obs
 	hiddenbar
-	android-studio
 	input-source-pro
 )
-brew install --cask "${apps[@]}"
+for app in "${apps[@]}"; do
+  brew install --cask "$app" || echo "Warning: Failed to install $app, skipping..."
+done
 
 # -------------------------------------------
 # 12. Mac App Store Apps
@@ -228,6 +236,11 @@ mas install 539883307  # LINE
 # 13. Dotfiles - .zshenv
 # -------------------------------------------
 echo "Writing ~/.zshenv..."
+echo "Backing up existing zsh config files..."
+for f in .zshenv .zprofile .zshrc; do
+  [ -f "$HOME/$f" ] && cp "$HOME/$f" "$HOME/${f}.bak.$(date +%s)"
+done
+
 cat > "$HOME/.zshenv" << 'ZSHENV_EOF'
 # =============================================================================
 # .zshenv - loaded for ALL zsh sessions (interactive & non-interactive)
@@ -291,7 +304,8 @@ export PATH="$PATH:$HOME/.local/bin"
 # --- Ruby (Homebrew) ---
 if [ -d "/opt/homebrew/opt/ruby/bin" ]; then
   export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
-  export PATH="$(gem environment gemdir)/bin:$PATH"
+  GEM_DIR="$(gem environment gemdir 2>/dev/null)"
+  [ -n "$GEM_DIR" ] && export PATH="$GEM_DIR/bin:$PATH"
 fi
 
 ZPROFILE_EOF
@@ -417,14 +431,15 @@ export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
 
 ZSHRC_EOF
 
-# setup dotfiles don't show unstacked files 
-dotfiles config --local status.showUntrackedFiles no
+# setup dotfiles don't show untracked files
+git --git-dir="$DOTFILES_DIR" --work-tree="$HOME" config --local status.showUntrackedFiles no
 
 
 # -------------------------------------------
 # 16. Runtime Versions (via mise)
 # -------------------------------------------
 echo "Installing runtime versions via mise..."
+eval "$(/opt/homebrew/bin/brew shellenv)"
 eval "$(mise activate bash)"
 mise use --global node@lts
 mise use --global go@latest
@@ -458,10 +473,6 @@ defaults write -g com.apple.keyboard.fnState -bool true
 
 # 8. 關閉自動大寫
 defaults write NSGlobalDomain NSAutomaticCapitalizationEnabled -bool false
-
-# --- Spotlight ---
-# 2. 停用 Spotlight 索引（改用 Raycast）
-sudo mdutil -a -i off
 
 # --- Siri ---
 # 7. 停用 Siri
