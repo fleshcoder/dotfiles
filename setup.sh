@@ -136,6 +136,7 @@ brew install mise
 # 7. Neovim Ecosystem
 # -------------------------------------------
 echo "Installing Neovim dependencies..."
+cargo install --locked tree-sitter-cli
 neovim_deps=(
   lua-language-server
   stylua
