@@ -1,0 +1,118 @@
+# =============================================================================
+# Ghostty Configuration
+# macOS + tmux + Neovim 開發者設定
+# 放到 ~/.config/ghostty/config
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 字體
+# -----------------------------------------------------------------------------
+# Ghostty 內建 JetBrains Mono + Nerd Font symbols，不需要額外安裝
+# 如果你偏好其他字體，取消註解並修改 font-family
+# font-family = "JetBrains Mono"
+font-size = 14
+font-thicken = true
+
+# 行高微調 — 讓 Neovim/tmux 的分隔線對齊更舒服
+adjust-cell-height = 2
+
+# -----------------------------------------------------------------------------
+# 主題
+# -----------------------------------------------------------------------------
+# 跟隨 macOS 系統深淺色自動切換
+# 執行 `ghostty +list-themes` 瀏覽所有內建主題
+theme = Kanagawa Dragon
+
+# -----------------------------------------------------------------------------
+# 視窗外觀 (macOS)
+# -----------------------------------------------------------------------------
+# tabs 整合進 titlebar，省空間又好看
+macos-titlebar-style = tabs
+# Option 鍵作為 Alt（Neovim / tmux 快捷鍵必備）
+macos-option-as-alt = true
+
+# 半透明背景 + 毛玻璃模糊
+background-opacity = 0.92
+background-blur-radius = 20
+
+# 視窗內邊距，讓內容不貼邊
+window-padding-x = 8
+window-padding-y = 4
+window-padding-balance = true
+
+# 關閉最後一個視窗時結束 app
+quit-after-last-window-closed = true
+
+# -----------------------------------------------------------------------------
+# 游標
+# -----------------------------------------------------------------------------
+cursor-style = bar
+cursor-style-blink = false
+
+# -----------------------------------------------------------------------------
+# 輸入行為
+# -----------------------------------------------------------------------------
+mouse-hide-while-typing = true
+# 複製時不自動複製選取內容（避免誤覆蓋剪貼板）
+copy-on-select = false
+
+# -----------------------------------------------------------------------------
+# 效能 & 歷史
+# -----------------------------------------------------------------------------
+scrollback-limit = 10000
+
+# -----------------------------------------------------------------------------
+# Shell 整合
+# -----------------------------------------------------------------------------
+shell-integration = zsh
+# cursor: 在 prompt 自動切換游標樣式
+# sudo: sudo 整合
+# no-title: 讓 tmux 控制視窗標題，避免衝突
+shell-integration-features = cursor,sudo,no-title
+
+# -----------------------------------------------------------------------------
+# tmux 快捷鍵整合
+# -----------------------------------------------------------------------------
+# 用 macOS 原生快捷鍵觸發 tmux 操作
+# tmux prefix = Ctrl-s (\x13)
+
+# Cmd+T → tmux 新建 window（prefix + c）
+keybind = cmd+t=text:\x13\x63
+
+# Cmd+W → tmux 關閉 pane（prefix + x）
+keybind = cmd+w=text:\x13\x78
+
+# Cmd+D → tmux 水平分割（prefix + %）
+keybind = cmd+d=text:\x13\x25
+
+# Cmd+Shift+D → tmux 垂直分割（prefix + "）
+keybind = cmd+shift+d=text:\x13\x22
+
+# Cmd+[ / Cmd+] → tmux 切換 window
+keybind = cmd+left_bracket=text:\x13\x70
+keybind = cmd+right_bracket=text:\x13\x6e
+
+# Cmd+Shift+Z → tmux zoom 當前 pane（prefix + z）
+keybind = cmd+shift+z=text:\x13\x7a
+
+# Cmd+1~9 → tmux 切換到對應 window
+keybind = cmd+one=text:\x13\x31
+keybind = cmd+two=text:\x13\x32
+keybind = cmd+three=text:\x13\x33
+keybind = cmd+four=text:\x13\x34
+keybind = cmd+five=text:\x13\x35
+keybind = cmd+six=text:\x13\x36
+keybind = cmd+seven=text:\x13\x37
+keybind = cmd+eight=text:\x13\x38
+keybind = cmd+nine=text:\x13\x39
+
+# -----------------------------------------------------------------------------
+# Quick Terminal（全域呼出終端）
+# -----------------------------------------------------------------------------
+# 任何地方按 Ctrl+` 都能叫出/收起 Ghostty
+keybind = global:ctrl+grave_accent=toggle_quick_terminal
+quick-terminal-position = top
+quick-terminal-screen = main
+quick-terminal-animation-duration = 0.15
+quick-terminal-autohide = true
+
