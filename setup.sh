@@ -34,6 +34,10 @@ git config --global init.defaultBranch main
 git config --global pull.rebase true
 git config --global core.editor "nvim"
 git config --global rerere.enabled true
+git config --global core.pager "delta"
+
+
+
 
 # -------------------------------------------
 # 3. Dotfiles (convert to bare repo)
@@ -119,7 +123,10 @@ cli_tools=(
   wget
   trash
   lazygit
+	difftastic 
+	delta
 )
+
 brew install "${cli_tools[@]}"
 
 # fzf key bindings & completion
@@ -364,6 +371,11 @@ eval "$(mise activate zsh)"
 
 # dotfiles sync
 alias dotfiles='git --git-dir=$HOME/.dotfiles --work-tree=$HOME'
+
+
+# Git
+gdft = git dft
+
 
 # Navigation
 alias ..="cd .."
