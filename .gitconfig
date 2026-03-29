@@ -1,0 +1,40 @@
+[gpg]
+	format = ssh
+[gpg "ssh"]
+	program = /Applications/1Password.app/Contents/MacOS/op-ssh-sign
+[commit]
+	gpgsign = true
+[user]
+	signingkey = ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDX8lF8CUSSlod+URMVUuYNJOUhiY8bEs90qHxOaXEa1qT41UHJmlsd1JyCAzT6taVCNQgeBy3yAURosxMwHanu8QixtYLceMG6fWOW07xYGVP1LBdzk0GRFStLCneScCwLLkdpT9Xvqlu+b9+j8f7qElJZFOu7GS4WaMfobq/+pOvAHo0AQvn81u/R+dt37MVbtjneumgdzhZxNo9p+QvscWpuEs9aA66EMOHjDa+D7/lXxhvLZw4iCX4Hixf+Gp5qwhAhnP18KZ8KC054u+7JPORlIqW5nuHIAwY4HeSBkoGhTr7xyk3yfYXwT0KP0nR0iJPzmvZRy2OnuKUzfp3uMOsW0fqMGgugZgpZs7pgbtgYHnFI2SdvoxMEPeHUd8qLAOsq9SxkRtaUcG+iBmzDhZffdtbrdBbhOMk6onyXfOUH4EkZD64SiR7qVjiVzJL3L7gM4VMpO4J8uODyWyp1OX2WfNSvx1ZwYOony+Oi7jH+ZILb0lokqElTlfb1GC8=
+	name = Dida Hsu
+	email = dida.frontend@gmail.com
+[init]
+	defaultBranch = main
+[pull]
+	rebase = true
+[core]
+	editor = nvim
+	pager = delta
+[rerere]
+	enabled = true
+[delta]
+	navigate = true
+	side-by-side = true
+	line-numbers = true
+[diff]
+	tool = difftastic
+
+[difftool "difftastic"]
+	cmd = difft "$LOCAL" "$REMOTE"
+
+[difftool]
+	prompt = false
+
+# 或者用 alias
+[alias]
+	dft = difftool
+	dlog = "!f() { GIT_EXTERNAL_DIFF=difft git log -p --ext-diff $@; }; f"
+								
+
+
+
