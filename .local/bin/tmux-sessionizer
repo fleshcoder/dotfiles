@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+# =============================================================================
+# tmux-sessionizer (worktree aware)
+#
+# 支援兩種專案結構：
+#   1. 一般 repo：~/projects/my-api → session "my-api"
+#   2. worktree：  ~/projects/my-api/feature-auth → session "my-api/feature-auth"
+#
+# 安裝:
+#   cp tmux-sessionizer ~/.local/bin/tmux-sessionizer
+#   chmod +x ~/.local/bin/tmux-sessionizer
+#
+# tmux.conf:
+#   bind-key f display-popup -E "~/.local/bin/tmux-sessionizer"
+# =============================================================================
+
+set -euo pipefail
+
+# --- 設定你的專案根目錄（可以加多個）---
+PROJECT_DIRS=(
+  "$HOME/projects"
+  "$HOME/work"
+)
+
+# --- 收集所有可切換的目標 ---
+candidates=()
+
+for base_dir in "${PROJECT_DIRS[@]}"; do
+  [[ -d "$base_dir" ]] || continue
+
+  for repo_dir in "$base_dir"/*/; do
+    [[ -d "$repo_dir" ]] || continue
+
+    # 檢查是不是 bare repo（worktree 的根）
+    if [[ -f "$repo_dir/HEAD" ]] && [[ -d "$repo_dir/refs" ]]; then
+      # bare repo：列出裡面的 worktree 目錄
+      for wt_dir in "$repo_dir"/*/; do
+        [[ -d "$wt_dir/.git" || -f "$wt_dir/.git" ]] && candidates+=("$wt_dir")
+      done
+      continue
+    fi
+
+    # 檢查 repo 底下有沒有 worktree 子目錄
+    has_worktrees=false
+    for sub_dir in "$repo_dir"/*/; do
+      # worktree 的 .git 是一個檔案（不是目錄），內容指向主 repo
+      if [[ -f "$sub_dir/.git" ]]; then
+        candidates+=("$sub_dir")
+        has_worktrees=true
+      fi
+    done
+
+    # 如果有 worktree，也把主 repo 本身加進去（如果它有 .git 目錄）
+    if $has_worktrees; then
+      [[ -d "$repo_dir/.git" ]] && candidates+=("$repo_dir")
+    else
+      # 一般 repo 或普通目錄，直接加
+      candidates+=("$repo_dir")
+    fi
+  done
+done
+
+# 也加入現有的 tmux sessions（方便切回已開的 session）
+while IFS= read -r session; do
+  candidates+=("tmux:$session")
+done < <(tmux list-sessions -F '#S' 2>/dev/null || true)
+
+# --- 用 fzf 選擇 ---
+selected=$(printf '%s\n' "${candidates[@]}" | sed 's|/$||' | sort -u | fzf \
+  --prompt="  " \
+  --header="選擇專案或 session" \
+  --preview='
+    dir="{}"
+    if [[ "$dir" == tmux:* ]]; then
+      session="${dir#tmux:}"
+      tmux capture-pane -t "$session" -p 2>/dev/null || echo "session: $session"
+    else
+      echo "📁 $dir"
+      echo "---"
+      git -C "$dir" log --oneline -5 2>/dev/null || ls "$dir"
+    fi
+  ' \
+  --preview-window=right:50%
+)
+
+[[ -z "$selected" ]] && exit 0
+
+# --- 如果選的是現有 tmux session，直接切過去 ---
+if [[ "$selected" == tmux:* ]]; then
+  session_name="${selected#tmux:}"
+  if [[ -z "${TMUX:-}" ]]; then
+    tmux attach-session -t "$session_name"
+  else
+    tmux switch-client -t "$session_name"
+  fi
+  exit 0
+fi
+
+# --- 產生 session 名稱 ---
+# 一般 repo: "my-api"
+# worktree:  "my-api/feature-auth"
+repo_base=$(basename "$(dirname "$selected")")
+dir_name=$(basename "$selected")
+
+# 判斷是不是 worktree（父目錄也在 PROJECT_DIRS 的子目錄裡）
+parent_of_parent=$(dirname "$(dirname "$selected")")
+is_worktree=false
+for base_dir in "${PROJECT_DIRS[@]}"; do
+  if [[ "$parent_of_parent" == "$base_dir" ]]; then
+    # selected 的上兩層就是 project root，表示這是 worktree
+    is_worktree=true
+    break
+  fi
+done
+
+if $is_worktree; then
+  session_name="${repo_base}/${dir_name}"
+else
+  session_name="$dir_name"
+fi
+
+# tmux session 名稱不能有點號和冒號
+session_name=$(echo "$session_name" | tr '.:' '_-')
+
+# --- 建立或切換 session ---
+if ! tmux has-session -t="$session_name" 2>/dev/null; then
+  tmux new-session -ds "$session_name" -c "$selected"
+fi
+
+if [[ -z "${TMUX:-}" ]]; then
+  tmux attach-session -t "$session_name"
+else
+  tmux switch-client -t "$session_name"
+fi
+

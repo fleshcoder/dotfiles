@@ -84,6 +84,10 @@ brew install zsh
 brew install tmux
 brew install neovim
 
+# Tmux plugins
+git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm 2>/dev/null || true
+~/.config/tmux/plugins/tpm/bin/install_plugins
+
 # Oh My Zsh
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
   echo "Installing Oh My Zsh..."
