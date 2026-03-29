@@ -28,17 +28,6 @@ brew install git
 brew install git-extras
 brew install gh
 
-git config --global user.name "Dida Hsu"
-git config --global user.email dida.frontend@gmail.com
-git config --global init.defaultBranch main
-git config --global pull.rebase true
-git config --global core.editor "nvim"
-git config --global rerere.enabled true
-git config --global core.pager "delta"
-
-
-
-
 # -------------------------------------------
 # 3. Dotfiles (convert to bare repo)
 # -------------------------------------------
