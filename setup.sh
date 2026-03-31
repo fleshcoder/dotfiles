@@ -323,6 +323,11 @@ cat > "$HOME/.zshrc" << 'ZSHRC_EOF'
 # Prompt, aliases, completions, interactive tools.
 # =============================================================================
 
+# --- start new tmux session when terminal up ---- #
+if [[ -z "$TMUX" ]] && [[ -n "$GHOSTTY_RESOURCES_DIR" ]]; then
+  exec tmux new-session -A -s main
+fi
+
 # --- Powerlevel10k instant prompt (must be at very top) ---
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
