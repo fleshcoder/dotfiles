@@ -96,15 +96,15 @@ keybind = cmd+right_bracket=text:\x13\x6e
 keybind = cmd+shift+z=text:\x13\x7a
 
 # Cmd+1~9 → tmux 切換到對應 window
-keybind = cmd+one=text:\x13\x31
-keybind = cmd+two=text:\x13\x32
-keybind = cmd+three=text:\x13\x33
-keybind = cmd+four=text:\x13\x34
-keybind = cmd+five=text:\x13\x35
-keybind = cmd+six=text:\x13\x36
-keybind = cmd+seven=text:\x13\x37
-keybind = cmd+eight=text:\x13\x38
-keybind = cmd+nine=text:\x13\x39
+keybind = cmd+digit_1=text:\x13\x31
+keybind = cmd+digit_2=text:\x13\x32
+keybind = cmd+digit_3=text:\x13\x33
+keybind = cmd+digit_4=text:\x13\x34
+keybind = cmd+digit_5=text:\x13\x35
+keybind = cmd+digit_6=text:\x13\x36
+keybind = cmd+digit_7=text:\x13\x37
+keybind = cmd+digit_8=text:\x13\x38
+keybind = cmd+digit_9=text:\x13\x39
 
 keybind = cmd+f=text:\x13\x66
 
