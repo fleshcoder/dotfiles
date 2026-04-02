@@ -13,7 +13,6 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 if ! command -v brew &>/dev/null; then
   echo "Installing Homebrew..."
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> "$HOME/.zprofile"
   eval "$(/opt/homebrew/bin/brew shellenv)"
 fi
 
@@ -75,6 +74,7 @@ brew install neovim
 
 # Tmux plugins
 git clone https://github.com/tmux-plugins/tpm ~/.config/tmux/plugins/tpm 2>/dev/null || true
+export TMUX_PLUGIN_MANAGER_PATH="$HOME/.config/tmux/plugins"
 ~/.config/tmux/plugins/tpm/bin/install_plugins
 
 # Oh My Zsh
@@ -98,7 +98,9 @@ if [ ! -d "$ZSH_CUSTOM_DIR/plugins/zsh-syntax-highlighting" ]; then
   git clone https://github.com/zsh-users/zsh-syntax-highlighting "$ZSH_CUSTOM_DIR/plugins/zsh-syntax-highlighting"
 fi
 
-git clone -b v2.1.3 https://github.com/catppuccin/tmux.git ~/.config/tmux/plugins/catppuccin/tmux
+if [ ! -d "$HOME/.config/tmux/plugins/catppuccin/tmux" ]; then
+  git clone -b v2.1.3 https://github.com/catppuccin/tmux.git ~/.config/tmux/plugins/catppuccin/tmux
+fi
 
 # -------------------------------------------
 # 5. Modern CLI Tools
@@ -135,7 +137,20 @@ echo "Installing mise for runtime management..."
 brew install mise
 
 # -------------------------------------------
-# 7. Neovim Ecosystem
+# 7. Languages & SDKs (brew-managed, not runtime)
+# -------------------------------------------
+echo "Installing language tooling..."
+brew install protobuf
+brew install golangci-lint
+
+# Rust (via rustup, not brew) — must be before cargo usage
+if ! command -v rustup &>/dev/null; then
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+fi
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
+
+# -------------------------------------------
+# 8. Neovim Ecosystem
 # -------------------------------------------
 echo "Installing Neovim dependencies..."
 cargo install --locked tree-sitter-cli
@@ -145,18 +160,6 @@ neovim_deps=(
   tree-sitter
 )
 brew install "${neovim_deps[@]}"
-
-# -------------------------------------------
-# 8. Languages & SDKs (brew-managed, not runtime)
-# -------------------------------------------
-echo "Installing language tooling..."
-brew install protobuf
-brew install golangci-lint
-
-# Rust (via rustup, not brew)
-if ! command -v rustup &>/dev/null; then
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-fi
 
 # -------------------------------------------
 # 9. Infrastructure & DevOps
@@ -233,16 +236,20 @@ done
 # -------------------------------------------
 echo "Installing Mac App Store apps..."
 brew install mas
-mas install 539883307  # LINE
+mas install 539883307 || echo "Warning: Failed to install LINE from App Store (not logged in?), skipping..."
 
 # -------------------------------------------
 # 13. Dotfiles - .zshenv
 # -------------------------------------------
 echo "Writing ~/.zshenv..."
-echo "Backing up existing zsh config files..."
-for f in .zshenv .zprofile .zshrc; do
-  [ -f "$HOME/$f" ] && cp "$HOME/$f" "$HOME/${f}.bak.$(date +%s)"
-done
+# 只在尚未備份過時才備份（避免重跑時堆積備份檔）
+if [ ! -f "$HOME/.zsh-backup-done" ]; then
+  echo "Backing up existing zsh config files..."
+  for f in .zshenv .zprofile .zshrc; do
+    [ -f "$HOME/$f" ] && cp "$HOME/$f" "$HOME/${f}.bak.$(date +%s)"
+  done
+  touch "$HOME/.zsh-backup-done"
+fi
 
 cat > "$HOME/.zshenv" << 'ZSHENV_EOF'
 # =============================================================================
@@ -372,7 +379,7 @@ alias dotfiles='git --git-dir=$HOME/.dotfiles --work-tree=$HOME'
 
 
 # Git
-gdft = git dft
+alias gdft="git dft"
 
 
 # Navigation
@@ -508,7 +515,7 @@ defaults write com.apple.finder AppleShowAllFiles -bool true
 defaults write NSGlobalDomain AppleShowAllExtensions -bool true
 defaults write com.apple.finder ShowPathbar -bool true
 defaults write com.apple.finder ShowStatusBar -bool true
-killall Finder
+killall Finder 2>/dev/null || true
 
 # --- Dock ---
 defaults delete com.apple.dock persistent-apps 2>/dev/null || true
@@ -516,7 +523,7 @@ defaults write com.apple.dock autohide -bool true
 defaults write com.apple.dock autohide-delay -float 0
 defaults write com.apple.dock autohide-time-modifier -float 0
 defaults write com.apple.dock show-recents -bool false
-killall Dock
+killall Dock 2>/dev/null || true
 
 # -------------------------------------------
 # 19. Cleanup
