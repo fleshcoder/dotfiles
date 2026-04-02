@@ -239,224 +239,22 @@ brew install mas
 mas install 539883307 || echo "Warning: Failed to install LINE from App Store (not logged in?), skipping..."
 
 # -------------------------------------------
-# 13. Dotfiles - .zshenv
+# 13. SSH config (1Password SSH Agent)
 # -------------------------------------------
-echo "Writing ~/.zshenv..."
-# 只在尚未備份過時才備份（避免重跑時堆積備份檔）
-if [ ! -f "$HOME/.zsh-backup-done" ]; then
-  echo "Backing up existing zsh config files..."
-  for f in .zshenv .zprofile .zshrc; do
-    [ -f "$HOME/$f" ] && cp "$HOME/$f" "$HOME/${f}.bak.$(date +%s)"
-  done
-  touch "$HOME/.zsh-backup-done"
+echo "Configuring SSH for 1Password Agent..."
+mkdir -p "$HOME/.ssh"
+chmod 700 "$HOME/.ssh"
+
+if [ ! -f "$HOME/.ssh/config" ]; then
+  cat > "$HOME/.ssh/config" << 'SSHCONFIG_EOF'
+Host *
+  IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+SSHCONFIG_EOF
+  chmod 600 "$HOME/.ssh/config"
 fi
 
-cat > "$HOME/.zshenv" << 'ZSHENV_EOF'
-# =============================================================================
-# .zshenv - loaded for ALL zsh sessions (interactive & non-interactive)
-# Keep this minimal. Only truly universal env vars belong here.
-# =============================================================================
-
-# Oh-My-Zsh path
-export ZSH="$HOME/.oh-my-zsh"
-
-# Default editor
-export EDITOR="nvim"
-export VISUAL="nvim"
-
-# Locale
-export LANG="en_US.UTF-8"
-export LC_ALL="en_US.UTF-8"
-
-# XDG Base Directories (keep dotfile clutter under control)
-export XDG_CONFIG_HOME="$HOME/.config"
-export XDG_DATA_HOME="$HOME/.local/share"
-export XDG_CACHE_HOME="$HOME/.cache"
-
-# Android SDK (needed by non-interactive builds too)
-export ANDROID_HOME="$HOME/Library/Android/sdk"
-ZSHENV_EOF
-
 # -------------------------------------------
-# 14. Dotfiles - .zprofile
-# -------------------------------------------
-echo "Writing ~/.zprofile..."
-cat > "$HOME/.zprofile" << 'ZPROFILE_EOF'
-# =============================================================================
-# .zprofile - loaded once for LOGIN shells
-# PATH construction & heavyweight tool init belong here.
-# =============================================================================
-
-# --- Homebrew (must be first) ---
-eval "$(/opt/homebrew/bin/brew shellenv)"
-
-# --- mise (manages node, go, java, python, etc.) ---
-eval "$(mise activate zsh --shims)"
-
-# --- Rust / Cargo ---
-[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
-
-# --- Go binaries ---
-if command -v go >/dev/null 2>&1; then
-  export PATH="$(go env GOPATH)/bin:$PATH"
-fi
-
-# --- Android SDK ---
-export PATH="$PATH:$ANDROID_HOME/emulator"
-export PATH="$PATH:$ANDROID_HOME/platform-tools"
-
-# --- JetBrains Toolbox CLI ---
-export PATH="$PATH:$HOME/Library/Application Support/JetBrains/Toolbox/scripts"
-
-# --- pipx / user-local binaries ---
-export PATH="$PATH:$HOME/.local/bin"
-
-# --- Ruby (Homebrew) ---
-if [ -d "/opt/homebrew/opt/ruby/bin" ]; then
-  export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
-  GEM_DIR="$(gem environment gemdir 2>/dev/null)"
-  [ -n "$GEM_DIR" ] && export PATH="$GEM_DIR/bin:$PATH"
-fi
-
-ZPROFILE_EOF
-
-# -------------------------------------------
-# 15. Dotfiles - .zshrc
-# -------------------------------------------
-echo "Writing ~/.zshrc..."
-cat > "$HOME/.zshrc" << 'ZSHRC_EOF'
-# =============================================================================
-# .zshrc - loaded for INTERACTIVE shells only
-# Prompt, aliases, completions, interactive tools.
-# =============================================================================
-
-# --- start new tmux session when terminal up ---- #
-if [[ -z "$TMUX" ]] && [[ -n "$GHOSTTY_RESOURCES_DIR" ]]; then
-  exec tmux new-session -A -s main
-fi
-
-# --- Powerlevel10k instant prompt (must be at very top) ---
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
-
-# --- Oh-My-Zsh ---
-ZSH_THEME="powerlevel10k/powerlevel10k"
-ZSH_DISABLE_COMPFIX=true
-
-plugins=(
-  git
-  docker
-  zsh-autosuggestions
-  zsh-syntax-highlighting
-)
-
-source "$ZSH/oh-my-zsh.sh"
-
-# Powerlevel10k config
-[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
-
-# --- History ---
-HISTSIZE=50000
-SAVEHIST=50000
-setopt SHARE_HISTORY
-setopt HIST_IGNORE_DUPS
-setopt HIST_IGNORE_ALL_DUPS
-setopt HIST_IGNORE_SPACE
-setopt HIST_VERIFY
-setopt HIST_REDUCE_BLANKS
-setopt HIST_FIND_NO_DUPS
-
-# --- mise (interactive mode, full activation) ---
-eval "$(mise activate zsh)"
-
-# =============================================================================
-# Aliases
-# =============================================================================
-
-# dotfiles sync
-alias dotfiles='git --git-dir=$HOME/.dotfiles --work-tree=$HOME'
-
-
-# Git
-alias gdft="git dft"
-
-
-# Navigation
-alias ..="cd .."
-alias ...="cd ../.."
-alias ....="cd ../../.."
-
-# Modern replacements
-alias ls="eza --icons"
-alias ll="eza --icons -la"
-alias la="eza --icons -la"
-alias lt="eza --icons --tree"
-alias cat="bat"
-alias find="fd"
-alias grep="rg"
-
-# Utilities
-alias mkdir="mkdir -p"
-alias df="df -h"
-alias du="du -h"
-
-# Editor
-alias vim="nvim"
-alias vi="nvim"
-
-# Git (beyond oh-my-zsh plugin)
-alias glog="git log --oneline --graph --decorate -20"
-
-# Docker
-alias d="docker"
-alias dc="docker compose"
-alias dps="docker ps"
-
-# Go
-alias gor="go run"
-alias gob="go build"
-alias got="go test"
-alias gov="go vet"
-alias gomt="go mod tidy"
-
-# Python
-alias python="python3"
-alias pip="pip3"
-
-# Quick config editing
-alias zshconfig="$EDITOR ~/.zshrc"
-alias zshenv="$EDITOR ~/.zshenv"
-alias zshprofile="$EDITOR ~/.zprofile"
-alias reload="source ~/.zshrc"
-
-# Claude Code
-alias cc="claude"
-alias ccd="claude --dangerously-skip-permissions"
-
-# =============================================================================
-# Interactive Tools (must be after PATH is fully constructed)
-# =============================================================================
-
-# Zoxide - smart cd
-eval "$(zoxide init zsh)"
-
-# fzf - fuzzy finder
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-
-# fzf config
-export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
-export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
-
-ZSHRC_EOF
-
-# setup dotfiles don't show untracked files
-git --git-dir="$DOTFILES_DIR" --work-tree="$HOME" config --local status.showUntrackedFiles no
-
-
-# -------------------------------------------
-# 16. Runtime Versions (via mise)
+# 14. Runtime Versions (via mise)
 # -------------------------------------------
 echo "Installing runtime versions via mise..."
 eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -468,22 +266,7 @@ mise use --global python@3
 
 
 # -------------------------------------------
-# 17 SSH config (1Password SSH Agent)
-# -------------------------------------------
-echo "Configuring SSH for 1Password Agent..."
-mkdir -p "$HOME/.ssh"
-chmod 700 "$HOME/.ssh"
- 
-if [ ! -f "$HOME/.ssh/config" ]; then
-  cat > "$HOME/.ssh/config" << 'SSHCONFIG_EOF'
-Host *
-  IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
-SSHCONFIG_EOF
-  chmod 600 "$HOME/.ssh/config"
-fi
-
-# -------------------------------------------
-# 18. macOS System Preferences
+# 15. macOS System Preferences
 # -------------------------------------------
 echo "Configuring macOS preferences..."
 
@@ -526,7 +309,7 @@ defaults write com.apple.dock show-recents -bool false
 killall Dock 2>/dev/null || true
 
 # -------------------------------------------
-# 19. Cleanup
+# 16. Cleanup
 # -------------------------------------------
 echo "Cleaning up..."
 brew cleanup
