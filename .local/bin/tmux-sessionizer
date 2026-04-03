@@ -69,8 +69,8 @@ done < <(tmux list-sessions -F '#S' 2>/dev/null || true)
 selected=$(printf '%s\n' "${candidates[@]}" | sed 's|/$||' | sort -u | fzf \
   --prompt="  " \
   --header="選擇專案或 session" \
-  --preview='
-    dir="{}"
+  --preview='bash -c '\''
+    dir="$1"
     if [[ "$dir" == tmux:* ]]; then
       session="${dir#tmux:}"
       tmux capture-pane -t "$session" -p 2>/dev/null || echo "session: $session"
@@ -79,7 +79,7 @@ selected=$(printf '%s\n' "${candidates[@]}" | sed 's|/$||' | sort -u | fzf \
       echo "---"
       git -C "$dir" log --oneline -5 2>/dev/null || ls "$dir"
     fi
-  ' \
+  '\'' _ {}' \
   --preview-window=right:50%
 )
 
