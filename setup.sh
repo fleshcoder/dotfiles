@@ -220,7 +220,6 @@ apps=(
   appcleaner
   the-unarchiver
 	ghostty
-	claude
 	claude-code
 	iina
 	obs

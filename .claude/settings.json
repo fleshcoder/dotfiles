@@ -69,10 +69,11 @@
       }
     }
   },
+  "language": "繁體中文",
   "alwaysThinkingEnabled": true,
+  "autoDreamEnabled": true,
   "skipDangerousModePermissionPrompt": true,
   "feedbackSurveyState": {
     "lastShownTime": 1754033060517
-  },
-  "autoDreamEnabled": true
+  }
 }
