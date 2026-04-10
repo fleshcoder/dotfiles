@@ -258,11 +258,7 @@ fi
 echo "Installing runtime versions via mise..."
 eval "$(/opt/homebrew/bin/brew shellenv)"
 eval "$(mise activate bash)"
-mise use --global node@lts
-mise use --global go@latest
-mise use --global java@temurin-21
-mise use --global python@3
-
+mise install
 
 # -------------------------------------------
 # 15. macOS System Preferences

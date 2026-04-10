@@ -106,7 +106,14 @@ keybind = cmd+digit_7=text:\x13\x37
 keybind = cmd+digit_8=text:\x13\x38
 keybind = cmd+digit_9=text:\x13\x39
 
+# CMD + f -> session explore
 keybind = cmd+f=text:\x13\x66
+
+# CMD + e -> toglgle sidebar
+keybind = cmd+e=text:\x13\x14
+
+# CMD + Shift + e -> focus sidebar
+keybind = cmd+shift+o=text:\x13\x13
 
 # -----------------------------------------------------------------------------
 # Quick Terminal（全域呼出終端）
