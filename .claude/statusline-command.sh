@@ -8,6 +8,8 @@ model=$(echo "$input" | jq -r '.model.display_name // ""')
 used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
 five_hour=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
 seven_day=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
+five_hour_reset=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
+seven_day_reset=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty')
 
 # Shorten home directory to ~
 short_dir="${cwd/#$HOME/~}"
@@ -47,9 +49,9 @@ pick_bar_color() {
 }
 
 # Build a usage line
-# Args: $1=label, $2=percentage, $3=label color
+# Args: $1=label, $2=percentage, $3=label color, $4=reset text (optional)
 make_usage_line() {
-  local label=$1 pct_val=$2 label_color=$3 width=10
+  local label=$1 pct_val=$2 label_color=$3 reset_text=$4 width=10
   local filled=$(printf '%.0f' "$(echo "$pct_val * $width / 100" | bc -l)")
   [ "$filled" -gt "$width" ] && filled=$width
   local empty=$((width - filled))
@@ -59,12 +61,17 @@ make_usage_line() {
   for ((i=0; i<filled; i++)); do bar+="▰"; done
   local empty_bar=""
   for ((i=0; i<empty; i++)); do empty_bar+="▱"; done
-  # colored label, colored filled bar, dim empty bar, colored pct
-  printf '%s%s %s%s%s%s%s %s%3s%%%s' \
+  # colored label, colored filled bar, dim empty bar, colored pct, optional reset
+  local reset_part=""
+  if [ -n "$reset_text" ]; then
+    reset_part=$(printf '  %s↻ %s%s' "$c_fujiGray" "$reset_text" "$rst")
+  fi
+  printf '%s%s %s%s%s%s%s %s%3s%%%s%s' \
     "$label_color" "$label" \
     "$bar_color" "$bar" \
     "$c_barEmpty" "$empty_bar" "$rst" \
-    "$bar_color" "$pct_int" "$rst"
+    "$bar_color" "$pct_int" "$rst" \
+    "$reset_part"
 }
 
 # === Line 1: identity ===
@@ -81,11 +88,21 @@ for ((i=0; i<${#parts[@]}; i++)); do
   line1+="${parts[$i]}"
 done
 
+# === Format reset times ===
+five_hour_reset_text=""
+if [ -n "$five_hour_reset" ]; then
+  five_hour_reset_text=$(date -r "$five_hour_reset" "+%H:%M" 2>/dev/null)
+fi
+seven_day_reset_text=""
+if [ -n "$seven_day_reset" ]; then
+  seven_day_reset_text=$(date -r "$seven_day_reset" "+%m/%d %H:%M" 2>/dev/null)
+fi
+
 # === Usage lines ===
 usage_lines=()
 [ -n "$used_pct" ]  && usage_lines+=("$(make_usage_line "$(printf '󰍛') ctx" "$used_pct" "$c_waveAqua2")")
-[ -n "$five_hour" ] && usage_lines+=("$(make_usage_line "$(printf '󰔛')  5h" "$five_hour" "$c_springViolet1")")
-[ -n "$seven_day" ] && usage_lines+=("$(make_usage_line "$(printf '󰃰')  7d" "$seven_day" "$c_sakuraPink")")
+[ -n "$five_hour" ] && usage_lines+=("$(make_usage_line "$(printf '󰔛')  5h" "$five_hour" "$c_springViolet1" "$five_hour_reset_text")")
+[ -n "$seven_day" ] && usage_lines+=("$(make_usage_line "$(printf '󰃰')  7d" "$seven_day" "$c_sakuraPink" "$seven_day_reset_text")")
 
 # === Output ===
 spacer=" "
