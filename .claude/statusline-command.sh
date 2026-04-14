@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Claude Code status line - inspired by Powerlevel10k classic theme
-# Shows: user@host  dir  git branch  |  model  context%  5h:X% 7d:X%
+# Claude Code status line — Kanagawa Dragon palette
 
 input=$(cat)
 
@@ -11,84 +10,90 @@ five_hour=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // emp
 seven_day=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
 
 # Shorten home directory to ~
-home="$HOME"
-short_dir="${cwd/#$home/~}"
+short_dir="${cwd/#$HOME/~}"
 
-# Git repo name + branch (skip optional locks)
+# Git repo name + branch
 git_info=""
 if git_out=$(GIT_OPTIONAL_LOCKS=0 git -C "$cwd" symbolic-ref --short HEAD 2>/dev/null); then
   repo_root=$(GIT_OPTIONAL_LOCKS=0 git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)
-  repo_name=$(basename "$repo_root")
-  git_info="$repo_name/$git_out"
+  git_info="$(basename "$repo_root")/$git_out"
 fi
 
-# Context usage progress bar
-ctx=""
-if [ -n "$used_pct" ]; then
-  bar_width=10
-  filled=$(printf '%.0f' "$(echo "$used_pct * $bar_width / 100" | bc -l)")
-  empty=$((bar_width - filled))
-  bar=""
-  for ((i=0; i<filled; i++)); do bar+="█"; done
-  for ((i=0; i<empty; i++)); do bar+="░"; done
-  pct_int=$(printf '%.0f' "$used_pct")
-  # Color: green <50, yellow <80, red >=80
-  if [ "$pct_int" -ge 80 ]; then
-    color="31"  # red
-  elif [ "$pct_int" -ge 50 ]; then
-    color="33"  # yellow
-  else
-    color="32"  # green
-  fi
-  ctx=$(printf '\033[%smctx %s\033[0m \033[%sm%s%%\033[0m' "$color" "$bar" "$color" "$pct_int")
-fi
+# === Kanagawa Dragon true-color helpers ===
+# Usage: $(tc r g b) → sets foreground to 24-bit color
+tc() { printf '\033[38;2;%s;%s;%sm' "$1" "$2" "$3"; }
+rst=$'\033[0m'
 
-# Rate limit usage with progress bars
-make_bar() {
-  local pct_val=$1 width=5
-  local filled=$(printf '%.0f' "$(echo "$pct_val * $width / 100" | bc -l)")
-  local empty=$((width - filled))
-  local pct_int=$(printf '%.0f' "$pct_val")
-  local color
-  if [ "$pct_int" -ge 80 ]; then color="31"
-  elif [ "$pct_int" -ge 50 ]; then color="33"
-  else color="32"; fi
-  local bar=""
-  for ((i=0; i<filled; i++)); do bar+="█"; done
-  for ((i=0; i<empty; i++)); do bar+="░"; done
-  printf '\033[%sm%s\033[0m \033[%sm%s%%\033[0m' "$color" "$bar" "$color" "$pct_int"
+# Palette
+c_springGreen="$(tc 152 187 108)"   # #98BB6C
+c_crystalBlue="$(tc 126 156 216)"   # #7E9CD8
+c_surimiOrange="$(tc 255 160 102)"  # #FFA066
+c_dragonBlue="$(tc 101 133 148)"    # #658594
+c_fujiGray="$(tc 114 113 105)"      # #727169
+c_waveAqua2="$(tc 122 168 159)"     # #7AA89F
+c_springViolet1="$(tc 147 138 169)" # #938AA9
+c_sakuraPink="$(tc 210 126 153)"    # #D27E99
+c_barOk="$(tc 152 187 108)"         # springGreen
+c_barWarn="$(tc 230 195 132)"       # #E6C384 carpYellow
+c_barDanger="$(tc 255 93 98)"       # #FF5D62 peachRed
+c_barEmpty="$(tc 84 84 109)"        # #54546D sumiInk4
+
+# Severity color for bars: green <50, yellow <80, red >=80
+pick_bar_color() {
+  local pct=$1
+  if [ "$pct" -ge 80 ]; then echo "$c_barDanger"
+  elif [ "$pct" -ge 50 ]; then echo "$c_barWarn"
+  else echo "$c_barOk"; fi
 }
 
-usage=""
-if [ -n "$five_hour" ] || [ -n "$seven_day" ]; then
-  usage_parts=""
-  [ -n "$five_hour" ] && usage_parts="5h:$(make_bar "$five_hour")"
-  [ -n "$seven_day" ] && usage_parts="$usage_parts 7d:$(make_bar "$seven_day")"
-  usage=$(printf " %s" "${usage_parts# }")
-fi
+# Build a usage line
+# Args: $1=label, $2=percentage, $3=label color
+make_usage_line() {
+  local label=$1 pct_val=$2 label_color=$3 width=10
+  local filled=$(printf '%.0f' "$(echo "$pct_val * $width / 100" | bc -l)")
+  [ "$filled" -gt "$width" ] && filled=$width
+  local empty=$((width - filled))
+  local pct_int=$(printf '%.0f' "$pct_val")
+  local bar_color=$(pick_bar_color "$pct_int")
+  local bar=""
+  for ((i=0; i<filled; i++)); do bar+="▰"; done
+  local empty_bar=""
+  for ((i=0; i<empty; i++)); do empty_bar+="▱"; done
+  # colored label, colored filled bar, dim empty bar, colored pct
+  printf '%s%s %s%s%s%s%s %s%3s%%%s' \
+    "$label_color" "$label" \
+    "$bar_color" "$bar" \
+    "$c_barEmpty" "$empty_bar" "$rst" \
+    "$bar_color" "$pct_int" "$rst"
+}
 
-# Build output with ANSI colors (will be dimmed by Claude Code)
-user_host=$(printf '\033[32m %s\033[0m' "$(whoami)")
-dir_part=$(printf '\033[34m %s\033[0m' "$short_dir")
-git_part=""
-[ -n "$git_info" ] && git_part=$(printf '\033[35m %s\033[0m' "$git_info")
-sep=$(printf '\033[90m | \033[0m')
-model_part=$(printf '\033[36m%s\033[0m' "$model")
-ctx_part="$ctx"
-usage_part="$usage"
+# === Line 1: identity ===
+sep="${c_fujiGray} │ ${rst}"
+parts=()
+parts+=("$(printf '%s%s  %s%s' "$c_springGreen" $'\xef\x80\x87' "$(whoami)" "$rst")")
+parts+=("$(printf '%s%s  %s%s' "$c_crystalBlue" $'\xef\x81\xbc' "$short_dir" "$rst")")
+[ -n "$git_info" ] && parts+=("$(printf '%s%s %s%s' "$c_surimiOrange" $'\xee\x9c\xa5' "$git_info" "$rst")")
+parts+=("$(printf '%s󰚩 %s%s' "$c_dragonBlue" "$model" "$rst")")
 
-# Collect non-empty sections and join with separator
-sections=()
-[ -n "$user_host" ] && sections+=("$user_host")
-[ -n "$dir_part" ] && sections+=("$dir_part")
-[ -n "$git_part" ] && sections+=("$git_part")
-[ -n "$model_part" ] && sections+=("$model_part")
-[ -n "$ctx_part" ] && sections+=("$ctx_part")
-[ -n "$usage_part" ] && sections+=("$usage_part")
-
-result=""
-for ((i=0; i<${#sections[@]}; i++)); do
-  [ $i -gt 0 ] && result+="$sep"
-  result+="${sections[$i]}"
+line1=""
+for ((i=0; i<${#parts[@]}; i++)); do
+  [ $i -gt 0 ] && line1+="$sep"
+  line1+="${parts[$i]}"
 done
-printf '%s\n' "$result"
+
+# === Usage lines ===
+usage_lines=()
+[ -n "$used_pct" ]  && usage_lines+=("$(make_usage_line "$(printf '󰍛') ctx" "$used_pct" "$c_waveAqua2")")
+[ -n "$five_hour" ] && usage_lines+=("$(make_usage_line "$(printf '󰔛')  5h" "$five_hour" "$c_springViolet1")")
+[ -n "$seven_day" ] && usage_lines+=("$(make_usage_line "$(printf '󰃰')  7d" "$seven_day" "$c_sakuraPink")")
+
+# === Output ===
+spacer=" "
+printf '%s\n' "$line1"
+if [ ${#usage_lines[@]} -gt 0 ]; then
+  printf '%s\n' "$spacer"
+  for ((i=0; i<${#usage_lines[@]}; i++)); do
+    [ $i -gt 0 ] && printf '%s\n' "$spacer"
+    printf '%s\n' "${usage_lines[$i]}"
+  done
+fi
