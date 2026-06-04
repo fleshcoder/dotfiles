@@ -33,3 +33,8 @@ if [ -d "/opt/homebrew/opt/ruby/bin" ]; then
   GEM_DIR="$(gem environment gemdir 2>/dev/null)"
   [ -n "$GEM_DIR" ] && export PATH="$GEM_DIR/bin:$PATH"
 fi
+
+
+# Added by Toolbox App
+export PATH="$PATH:/Users/didahsu/Library/Application Support/JetBrains/Toolbox/scripts"
+

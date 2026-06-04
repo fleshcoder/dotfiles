@@ -142,3 +142,11 @@ export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
 
 # claude
 export CLAUDE_CODE_NO_FLICKER=1
+
+# pnpm
+export PNPM_HOME="/Users/didahsu/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME/bin:"*) ;;
+  *) export PATH="$PNPM_HOME/bin:$PATH" ;;
+esac
+# pnpm end
