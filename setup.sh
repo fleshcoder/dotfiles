@@ -166,7 +166,6 @@ brew install "${neovim_deps[@]}"
 # -------------------------------------------
 echo "Installing infra tools..."
 brew install kubectl
-brew install terraform
 brew install awscli
 
 # -------------------------------------------
@@ -202,7 +201,6 @@ done
 # -------------------------------------------
 echo "Installing applications..."
 apps=(
-  1password
   google-chrome
   arc
   jetbrains-toolbox
@@ -214,7 +212,7 @@ apps=(
   slack
   discord
   telegram
-	orbstack
+  orbstack
   spotify
   raycast
   appcleaner
